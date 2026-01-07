@@ -5,7 +5,6 @@ import mongoose from "mongoose";
     email: {
         type: String,
         required: true,
-        unique: true
     },
     phone: {
         type: Number,
