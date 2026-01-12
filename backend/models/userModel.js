@@ -17,6 +17,7 @@ import mongoose from "mongoose";
     role: {
         type: String,
         enum: ["user", "admin", "provider"],
+        default: "user",
         required: true
     }
 },

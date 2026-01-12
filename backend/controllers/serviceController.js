@@ -28,3 +28,71 @@ export const createService = async (req, res) => {
         return res.status(500).json({message: "Internal Server Error"});
     }
 };
+
+export const getAllServices = async (req, res) => {
+  try {
+    const services = await Service.find({ isApproved: true}).populate("providerId", "name phone");
+    res.status(200).json({
+      success: true,
+      count: services.length,
+      services
+    })
+  } catch (error) {
+    console.log(error)
+    res.status(500).json({message: "Internal Server Error"})
+  }
+}
+
+export const updateService = async (req, res) => {
+  try {
+    const service = await Service.findById(req.params.id);
+
+    if(!service){
+      return res.status(404).json({message: "Service not found"});
+    }
+
+    if(service.providerId.toString() !== req.user.id){
+      return res.status(403).json({message: "Not authorized"});
+    }
+
+    Object.assign(service, req.body);
+    service.isApproved = false;
+    await service.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Service updated successfully",
+      service
+    });
+
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({message: "Server error"});
+  }
+};
+
+export const deleteService = async (req, res) => {
+  try {
+    const service = await Service.findById(req.params.id);
+
+    if(!service){
+      return res.status(404).json({message: "Service not found"});
+    }
+
+    if(service.providerId.toString() !== req.user.id){
+      return res.status(403).json({message: "Not authorized"});
+    }
+
+    await Service.deleteOne();
+
+    res.status(200).json({
+      success: true,
+      message: "Service deleted successfully"
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({message: "Server Error"});
+  }
+};
+
+
