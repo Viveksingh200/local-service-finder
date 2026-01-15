@@ -25,6 +25,7 @@ export const approveService = async (req, res) => {
         service.isApproved = true;
         await service.save();
     } catch (error) {
-        
+        console.log(error);
+        res.status(500).json({message: "Internal Server Error"});
     }
 }
