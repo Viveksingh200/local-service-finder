@@ -43,6 +43,72 @@ export const getAllServices = async (req, res) => {
   }
 }
 
+//Get single service by Id
+export const getSingleService = async (req, res) => {
+  try {
+    const service = await Service.findById({
+      _id: req.params.id,
+      isApproved: true
+    }).populate("providerId", "name phone");
+
+    if(!service){
+      return res.status(404).json({message: "Service not found"});
+    }
+
+    res.status(200).json({
+      success: true,
+      service
+    })
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({message: "Internal Server Error"});
+  }
+};
+
+//Search Approved Service
+export const searchService = async (req, res) => {
+  try {
+    const {category, location} = req.query;
+
+    const filter = {isApproved: true};
+    if(category) filter.category = new RegExp(category, "i");
+    if(location) filter.location = new RegExp(location, "i");
+
+    const service = await Service.find(filter);
+    res.status(200).json({
+      success: true,
+      service
+    })
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({message: "Internal Server Error"});
+  }
+}
+
+//Get search single service with provider details
+export const getServiceWithProvider = async (req, res) => {
+  try {
+    const service = await Service.findOne({
+      _id: req.params.id,
+      isApproved: true
+    }).populate("providerId", "name phone");
+
+    if(!service){
+      return res.status(404).json({message: "Service not found"});
+    }
+
+    res.status(200).json({
+      success: true,
+      service
+    })
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({message: "Internal Server Error"});
+  }
+};
+
+
+
 export const updateService = async (req, res) => {
   try {
     const service = await Service.findById(req.params.id);
