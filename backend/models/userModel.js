@@ -19,6 +19,10 @@ import mongoose from "mongoose";
         enum: ["user", "admin", "provider"],
         default: "user",
         required: true
+    },
+    isBlocked: {
+        type: Boolean,
+        default: false
     }
 },
     {timestamps: true}

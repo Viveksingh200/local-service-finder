@@ -1,18 +1,25 @@
 import { Router } from "express";
-import { approveService, getApprovedServices, getPendingServices } from "../controllers/adminController.js";
+import {
+  getPendingWorkers,
+  approveWorker,
+  getApprovedWorkers,
+  getAllWorkersAdmin,
+  getAllUsersAdmin,
+  toggleBlockUser,
+  deleteFakeWorker
+} from "../controllers/adminController.js";
 import { checkUserAuth } from "../middlewares/authMiddleware.js";
 import { isAdmin } from "../middlewares/roleMiddleware.js";
 
 const router = Router();
 
-router.get("/pending-services",checkUserAuth, isAdmin, getPendingServices);
-
-//Approve services 
-router.patch("/approve/:id", checkUserAuth, isAdmin, approveService);
-
-//Get approved services
-router.get("/approved-services", checkUserAuth, isAdmin, getApprovedServices);
-
-//
+// Secure admin actions
+router.get("/pending-workers", checkUserAuth, isAdmin, getPendingWorkers);
+router.patch("/approve/:id", checkUserAuth, isAdmin, approveWorker);
+router.get("/approved-workers", checkUserAuth, isAdmin, getApprovedWorkers);
+router.get("/workers", checkUserAuth, isAdmin, getAllWorkersAdmin);
+router.get("/users", checkUserAuth, isAdmin, getAllUsersAdmin);
+router.patch("/block/:id", checkUserAuth, isAdmin, toggleBlockUser);
+router.delete("/workers/fake/:id", checkUserAuth, isAdmin, deleteFakeWorker);
 
 export default router;

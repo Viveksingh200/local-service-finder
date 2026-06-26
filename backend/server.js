@@ -4,7 +4,9 @@ import dotenv from "dotenv";
 import mongoose from "mongoose";
 import userRoute from "./routes/userRoute.js";
 import adminRoute from "./routes/adminRoute.js";
-import serviceRoute from "./routes/serviceRoute.js";
+import categoryRoute from "./routes/categoryRoute.js";
+import workerRoute from "./routes/workerRoute.js";
+import reviewRoute from "./routes/reviewRoute.js";
 
 dotenv.config();
 const app = express();
@@ -13,8 +15,10 @@ app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
 app.use("/api/user", userRoute);
-app.use("/api/services", serviceRoute);
 app.use("/api/admin", adminRoute);
+app.use("/api/categories", categoryRoute);
+app.use("/api/workers", workerRoute);
+app.use("/api/reviews", reviewRoute);
 
 const PORT = process.env.PORT || 5000;
 
