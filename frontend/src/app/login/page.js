@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/authContext";
 import { useLanguage } from "@/context/languageContext";
+import { Eye, EyeOff } from "lucide-react";
 
 const Login = () => {
   const { login } = useAuth();
@@ -13,6 +14,7 @@ const Login = () => {
 
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -81,15 +83,24 @@ const Login = () => {
             <label htmlFor="password" className="pt-4 text-zinc-700 font-semibold text-sm">
               {t.password}
             </label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder={t.passwordPlaceholder}
-              className="px-4 py-2 mt-2 border border-zinc-200 rounded-md outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all text-sm text-zinc-900 placeholder-zinc-400"
-              required
-            />
+            <div className="relative mt-2">
+              <input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder={t.passwordPlaceholder}
+                className="w-full px-4 py-2 pr-10 border border-zinc-200 rounded-md outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all text-sm text-zinc-900 placeholder-zinc-400"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 focus:outline-none cursor-pointer flex items-center"
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
           </div>
 
           <button

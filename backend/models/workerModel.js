@@ -18,11 +18,7 @@ const workerSchema = new mongoose.Schema(
       required: true,
       trim: true
     },
-    email: {
-      type: String,
-      required: true,
-      trim: true
-    },
+
     profession: {
       type: String,
       required: true,
@@ -49,6 +45,11 @@ const workerSchema = new mongoose.Schema(
     area: {
       type: String,
       required: true,
+      trim: true
+    },
+    country: {
+      type: String,
+      default: "",
       trim: true
     },
     rating: {
@@ -105,14 +106,13 @@ workerSchema.methods.calculateCompletion = function () {
   const fields = [
     "name",
     "phone",
-    "email",
     "profession",
     "description",
     "experience",
     "city",
     "area",
-    "profileImage",
-    "aadhaarNumber"
+    "country",
+    "profileImage"
   ];
   let filledFields = 0;
   fields.forEach((field) => {

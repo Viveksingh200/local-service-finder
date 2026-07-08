@@ -14,9 +14,9 @@ const testRBACAndReviews = async () => {
     await mongoose.connect(MONGO_URI);
 
     // Get test entities
-    const clientUser = await User.findOne({ email: "rohan@gmail.com" });
-    const workerUser = await User.findOne({ email: "amit.plumber@gmail.com" });
-    const workerProfile = await Worker.findOne({ email: "amit.plumber@gmail.com" });
+    const clientUser = await User.findOne({ phone: "8888888888" });
+    const workerUser = await User.findOne({ phone: "9111111111" });
+    const workerProfile = await Worker.findOne({ phone: "9111111111" });
 
     if (!clientUser || !workerUser || !workerProfile) {
       console.log("❌ Test failed: Seeding data not found. Please run seed.js first.");

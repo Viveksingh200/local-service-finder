@@ -4,7 +4,8 @@ import {
   getWorkerBySlug,
   getWorkerById,
   updateWorkerProfile,
-  updateWorkerAvailability
+  updateWorkerAvailability,
+  uploadProfileImage
 } from "../controllers/workerController.js";
 import { checkUserAuth } from "../middlewares/authMiddleware.js";
 import { isProvider } from "../middlewares/roleMiddleware.js";
@@ -19,5 +20,6 @@ router.get("/slug/:slug", getWorkerBySlug);
 router.get("/:id", checkUserAuth, getWorkerById);
 router.put("/profile", checkUserAuth, isProvider, updateWorkerProfile);
 router.put("/availability", checkUserAuth, isProvider, updateWorkerAvailability);
+router.post("/upload-avatar", checkUserAuth, isProvider, uploadProfileImage);
 
 export default router;

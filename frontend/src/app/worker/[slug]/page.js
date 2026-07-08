@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "@/config";
+import { API_BASE_URL, getProfileImageUrl } from "@/config";
 import React from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -34,11 +34,11 @@ export async function generateMetadata({ params }) {
   return {
     title: `${worker.name} - Professional ${worker.profession} in ${worker.city} | Workers`,
     description: `${worker.name} is a trusted ${worker.profession} offering services in ${worker.city}. ${worker.description?.slice(0, 120)}...`,
-    openGraph: {
-      title: `${worker.name} - ${worker.profession} | Workers`,
-      description: worker.description || `Call ${worker.name} for local professional service in ${worker.city}.`,
-      images: worker.profileImage ? [{ url: worker.profileImage }] : []
-    }
+      openGraph: {
+        title: `${worker.name} - ${worker.profession} | Workers`,
+        description: worker.description || `Call ${worker.name} for local professional service in ${worker.city}.`,
+        images: worker.profileImage ? [{ url: getProfileImageUrl(worker.profileImage) }] : []
+      }
   };
 }
 
@@ -74,13 +74,13 @@ export default async function WorkerProfilePage({ params }) {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
     "name": worker.name,
-    "image": worker.profileImage || "http://localhost:3000/register.png",
+    "image": getProfileImageUrl(worker.profileImage) || "http://localhost:3000/register.png",
     "description": worker.description || `Professional ${worker.profession} in ${worker.city}`,
     "address": {
       "@type": "PostalAddress",
       "addressLocality": worker.area,
       "addressRegion": worker.city,
-      "addressCountry": "IN"
+      "addressCountry": worker.country === "India" ? "IN" : worker.country === "United States" ? "US" : (worker.country || "US")
     },
     "aggregateRating": worker.totalReviews > 0 ? {
       "@type": "AggregateRating",

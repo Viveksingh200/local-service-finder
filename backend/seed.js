@@ -30,7 +30,6 @@ const seedDatabase = async () => {
     // 1. Create Users
     const admin = await User.create({
       name: "System Admin",
-      email: "admin@servicefinder.com",
       phone: 9999999999, // User model has Number
       password: adminPassword,
       role: "admin"
@@ -38,7 +37,6 @@ const seedDatabase = async () => {
 
     const client1 = await User.create({
       name: "Rohan Sharma",
-      email: "rohan@gmail.com",
       phone: 8888888888,
       password: clientPassword,
       role: "user"
@@ -46,7 +44,6 @@ const seedDatabase = async () => {
 
     const client2 = await User.create({
       name: "Priya Patel",
-      email: "priya@gmail.com",
       phone: 7777777777,
       password: clientPassword,
       role: "user"
@@ -55,7 +52,6 @@ const seedDatabase = async () => {
     // Worker Users
     const wUserA = await User.create({
       name: "Amit Kumar (Plumber A)",
-      email: "amit.plumber@gmail.com",
       phone: 9111111111,
       password: workerPassword,
       role: "provider"
@@ -63,7 +59,6 @@ const seedDatabase = async () => {
 
     const wUserB = await User.create({
       name: "Vijay Singh (Plumber B)",
-      email: "vijay.plumber@gmail.com",
       phone: 9222222222,
       password: workerPassword,
       role: "provider"
@@ -71,7 +66,6 @@ const seedDatabase = async () => {
 
     const wUserC = await User.create({
       name: "Suresh Gupta (Electrician C)",
-      email: "suresh.electrician@gmail.com",
       phone: 9333333333,
       password: workerPassword,
       role: "provider"
@@ -94,7 +88,6 @@ const seedDatabase = async () => {
       userId: wUserA._id,
       name: wUserA.name,
       phone: wUserA.phone.toString(),
-      email: wUserA.email,
       profession: "Plumber",
       experience: 8,
       description: "Expert plumbing services. Available for leakage fixes, tap installations, and drainage repairs.",
@@ -116,7 +109,6 @@ const seedDatabase = async () => {
       userId: wUserB._id,
       name: wUserB.name,
       phone: wUserB.phone.toString(),
-      email: wUserB.email,
       profession: "Plumber",
       experience: 4,
       description: "Affordable plumbing repairs. Quick support in Nerul and Kharghar.",
@@ -138,7 +130,6 @@ const seedDatabase = async () => {
       userId: wUserC._id,
       name: wUserC.name,
       phone: wUserC.phone.toString(),
-      email: wUserC.email,
       profession: "Electrician",
       experience: 6,
       description: "Certified residential electrician. Specializing in home wiring and appliance setup.",
@@ -158,7 +149,6 @@ const seedDatabase = async () => {
     // Worker D: Pending approval worker
     const wUserD = await User.create({
       name: "Deepak Rawat (Pending Worker)",
-      email: "deepak.rawat@gmail.com",
       phone: 9444444444,
       password: workerPassword,
       role: "provider"
@@ -168,7 +158,6 @@ const seedDatabase = async () => {
       userId: wUserD._id,
       name: wUserD.name,
       phone: wUserD.phone.toString(),
-      email: wUserD.email,
       profession: "AC Repair",
       experience: 5,
       description: "AC installation and cooling solutions service provider.",

@@ -7,7 +7,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/context/authContext";
 import { useLanguage } from "@/context/languageContext";
-import { ShieldCheck, ShieldAlert, Users, FolderKanban, Plus, Trash2, Ban, UserCheck, RefreshCw, Star } from "lucide-react";
+import { ShieldCheck, ShieldAlert, Users, FolderKanban, Plus, Trash2, Ban, UserCheck, RefreshCw, Star, Eye, EyeOff } from "lucide-react";
 
 export default function AdminDashboard() {
   const { user, loading } = useAuth();
@@ -43,6 +43,9 @@ export default function AdminDashboard() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [updatingPassword, setUpdatingPassword] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const fetchAdminData = async () => {
     setLoadingData(true);
@@ -302,10 +305,10 @@ export default function AdminDashboard() {
         )}
 
         {/* Dashboard Tabs navigation */}
-        <div className="flex border-b border-gray-150 mb-8 bg-white rounded-xl p-1 border shadow-sm">
+        <div className="grid grid-cols-2 md:flex border border-gray-150 mb-8 bg-white rounded-xl p-1 shadow-sm gap-1">
           <button
             onClick={() => setActiveTab("approvals")}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg text-xs font-extrabold cursor-pointer transition-all ${
+            className={`flex-1 flex items-center justify-center gap-2 py-3 px-2 rounded-lg text-xs font-extrabold cursor-pointer transition-all ${
               activeTab === "approvals"
                 ? "bg-zinc-900 text-white shadow-sm"
                 : "text-zinc-500 hover:text-zinc-900"
@@ -317,7 +320,7 @@ export default function AdminDashboard() {
           
           <button
             onClick={() => setActiveTab("users")}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg text-xs font-extrabold cursor-pointer transition-all ${
+            className={`flex-1 flex items-center justify-center gap-2 py-3 px-2 rounded-lg text-xs font-extrabold cursor-pointer transition-all ${
               activeTab === "users"
                 ? "bg-zinc-900 text-white shadow-sm"
                 : "text-zinc-500 hover:text-zinc-900"
@@ -329,7 +332,7 @@ export default function AdminDashboard() {
 
           <button
             onClick={() => setActiveTab("categories")}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg text-xs font-extrabold cursor-pointer transition-all ${
+            className={`flex-1 flex items-center justify-center gap-2 py-3 px-2 rounded-lg text-xs font-extrabold cursor-pointer transition-all ${
               activeTab === "categories"
                 ? "bg-zinc-900 text-white shadow-sm"
                 : "text-zinc-500 hover:text-zinc-900"
@@ -341,7 +344,7 @@ export default function AdminDashboard() {
 
           <button
             onClick={() => setActiveTab("security")}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg text-xs font-extrabold cursor-pointer transition-all ${
+            className={`flex-1 flex items-center justify-center gap-2 py-3 px-2 rounded-lg text-xs font-extrabold cursor-pointer transition-all ${
               activeTab === "security"
                 ? "bg-zinc-900 text-white shadow-sm"
                 : "text-zinc-500 hover:text-zinc-900"
@@ -370,51 +373,97 @@ export default function AdminDashboard() {
                     No pending profiles awaiting approval.
                   </div>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse text-xs sm:text-sm">
-                      <thead>
-                        <tr className="bg-zinc-50 text-zinc-500 uppercase tracking-wider font-extrabold border-b border-gray-100 text-[10px]">
-                          <th className="px-6 py-4">Worker details</th>
-                          <th className="px-6 py-4">Profession</th>
-                          <th className="px-6 py-4">Experience</th>
-                          <th className="px-6 py-4">Location</th>
-                          <th className="px-6 py-4">Aadhaar (Secure)</th>
-                          <th className="px-6 py-4 text-right">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100 text-zinc-700">
-                        {pendingWorkers.map((w) => (
-                          <tr key={w._id} className="hover:bg-zinc-50/50 transition-colors">
-                            <td className="px-6 py-4">
-                              <div className="font-bold text-zinc-900">{w.name}</div>
-                              <div className="text-[10px] text-zinc-400 mt-0.5">{w.email} | {w.phone}</div>
-                            </td>
-                            <td className="px-6 py-4 font-semibold text-orange-600 uppercase">{w.profession}</td>
-                            <td className="px-6 py-4">{w.experience} Years</td>
-                            <td className="px-6 py-4">{w.area}, {w.city}</td>
-                            <td className="px-6 py-4 font-mono text-[11px] text-zinc-500">{w.aadhaarNumber || "Not Provided"}</td>
-                            <td className="px-6 py-4 text-right">
-                              <div className="flex gap-2 justify-end">
-                                <button
-                                  onClick={() => handleApproveWorker(w._id)}
-                                  className="flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold px-3 py-1.5 rounded-lg text-[10px] cursor-pointer shadow-sm"
-                                >
-                                  <ShieldCheck className="h-3.5 w-3.5" />
-                                  <span>Approve Live</span>
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteFakeWorker(w._id)}
-                                  className="flex items-center gap-1 bg-red-50 hover:bg-red-100 text-red-600 font-extrabold px-3 py-1.5 rounded-lg text-[10px] cursor-pointer"
-                                >
-                                  <Trash2 className="h-3.5 w-3.5" />
-                                  <span>Reject / Delete</span>
-                                </button>
-                              </div>
-                            </td>
+                  <div>
+                    {/* Desktop View Table */}
+                    <div className="hidden md:block overflow-x-auto">
+                      <table className="w-full text-left border-collapse text-xs sm:text-sm">
+                        <thead>
+                          <tr className="bg-zinc-50 text-zinc-500 uppercase tracking-wider font-extrabold border-b border-gray-100 text-[10px]">
+                            <th className="px-6 py-4">Worker details</th>
+                            <th className="px-6 py-4">Profession</th>
+                            <th className="px-6 py-4">Experience</th>
+                            <th className="px-6 py-4">Location</th>
+                            <th className="px-6 py-4 text-right">Actions</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100 text-zinc-700">
+                          {pendingWorkers.map((w) => (
+                            <tr key={w._id} className="hover:bg-zinc-50/50 transition-colors">
+                              <td className="px-6 py-4">
+                                <div className="font-bold text-zinc-900">{w.name}</div>
+                                <div className="text-[10px] text-zinc-400 mt-0.5">{w.phone}</div>
+                              </td>
+                              <td className="px-6 py-4 font-semibold text-orange-600 uppercase">{w.profession}</td>
+                              <td className="px-6 py-4">{w.experience} Years</td>
+                              <td className="px-6 py-4">{w.area}, {w.city}</td>
+                              <td className="px-6 py-4 text-right">
+                                <div className="flex gap-2 justify-end">
+                                  <button
+                                    onClick={() => handleApproveWorker(w._id)}
+                                    className="flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold px-3 py-1.5 rounded-lg text-[10px] cursor-pointer shadow-sm"
+                                  >
+                                    <ShieldCheck className="h-3.5 w-3.5" />
+                                    <span>Approve Live</span>
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteFakeWorker(w._id)}
+                                    className="flex items-center gap-1 bg-red-50 hover:bg-red-100 text-red-600 font-extrabold px-3 py-1.5 rounded-lg text-[10px] cursor-pointer"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                    <span>Reject / Delete</span>
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Mobile View Cards */}
+                    <div className="block md:hidden divide-y divide-gray-150">
+                      {pendingWorkers.map((w) => (
+                        <div key={w._id} className="p-4 flex flex-col gap-3 hover:bg-zinc-50/50 transition-colors">
+                          <div className="flex justify-between items-start">
+                            <div className="text-left">
+                              <div className="font-bold text-zinc-900 text-sm">{w.name}</div>
+                              <div className="text-[10px] text-zinc-400 mt-0.5">{w.phone}</div>
+                            </div>
+                            <span className="text-[9px] bg-orange-50 text-orange-600 border border-orange-100 px-2 py-0.5 rounded font-extrabold uppercase shrink-0">
+                              {w.profession}
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2 text-left text-xs text-zinc-650 bg-zinc-50 p-2.5 rounded-xl border border-zinc-150">
+                            <div>
+                              <span className="font-bold text-zinc-400 block text-[9px] uppercase">Experience</span>
+                              <span className="font-semibold text-zinc-700">{w.experience} Years</span>
+                            </div>
+                            <div>
+                              <span className="font-bold text-zinc-400 block text-[9px] uppercase">Location</span>
+                              <span className="font-semibold text-zinc-700 truncate block">{w.area}, {w.city}</span>
+                            </div>
+                          </div>
+
+                          <div className="flex gap-2 w-full mt-1">
+                            <button
+                              onClick={() => handleApproveWorker(w._id)}
+                              className="flex-1 flex items-center justify-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-2 rounded-lg text-xs cursor-pointer shadow-sm"
+                            >
+                              <ShieldCheck className="h-3.5 w-3.5" />
+                              <span>Approve</span>
+                            </button>
+                            <button
+                              onClick={() => handleDeleteFakeWorker(w._id)}
+                              className="flex-1 flex items-center justify-center gap-1 bg-red-50 hover:bg-red-100 text-red-600 font-extrabold py-2 rounded-lg text-xs cursor-pointer"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                              <span>Reject</span>
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
@@ -431,7 +480,7 @@ export default function AdminDashboard() {
                   
                   <div className="divide-y divide-gray-100 max-h-160 overflow-y-auto">
                     {allWorkers.map((w) => (
-                      <div key={w._id} className="p-4 flex items-center justify-between hover:bg-zinc-50/50 text-xs">
+                      <div key={w._id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-zinc-50/50 text-xs text-left">
                         <div>
                           <div className="font-bold text-zinc-900 flex items-center gap-2">
                             <span>{w.name}</span>
@@ -446,10 +495,10 @@ export default function AdminDashboard() {
                           </div>
                         </div>
 
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 self-end sm:self-center shrink-0">
                           <button
                             onClick={() => handleToggleBlock(w.userId)}
-                            className={`px-2 py-1.5 rounded-lg border font-bold text-[9px] cursor-pointer ${
+                            className={`px-2.5 py-1.5 rounded-lg border font-bold text-[9px] cursor-pointer ${
                               allUsers.find((u) => u._id === w.userId)?.isBlocked
                                 ? "bg-red-50 border-red-200 text-red-600"
                                 : "bg-white border-zinc-200 text-zinc-500 hover:bg-zinc-50"
@@ -459,7 +508,7 @@ export default function AdminDashboard() {
                           </button>
                           <button
                             onClick={() => handleDeleteFakeWorker(w._id)}
-                            className="bg-red-50 border border-red-100 text-red-600 px-2 py-1.5 rounded-lg text-[9px] font-bold hover:bg-red-100 cursor-pointer"
+                            className="bg-red-50 border border-red-100 text-red-600 px-2.5 py-1.5 rounded-lg text-[9px] font-bold hover:bg-red-100 cursor-pointer"
                           >
                             Delete
                           </button>
@@ -477,20 +526,20 @@ export default function AdminDashboard() {
 
                   <div className="divide-y divide-gray-100 max-h-160 overflow-y-auto">
                     {allUsers.map((u) => (
-                      <div key={u._id} className="p-4 flex items-center justify-between hover:bg-zinc-50/50 text-xs">
+                      <div key={u._id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-zinc-50/50 text-xs text-left">
                         <div>
                           <div className="font-bold text-zinc-900 flex items-center gap-1.5">
                             <span>{u.name}</span>
                             <span className="text-[8px] bg-zinc-100 text-zinc-500 border px-1 rounded uppercase font-bold">{u.role}</span>
                           </div>
-                          <p className="text-[10px] text-zinc-400 mt-0.5">{u.email} | {u.phone}</p>
+                          <p className="text-[10px] text-zinc-400 mt-0.5">{u.phone}</p>
                           <p className="text-[9px] text-zinc-400 mt-1">Joined: {new Date(u.createdAt).toLocaleDateString()}</p>
                         </div>
 
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 self-end sm:self-center shrink-0">
                           <button
                             onClick={() => handleToggleBlock(u._id)}
-                            className={`px-2.5 py-1.5 rounded-lg border font-bold text-[9px] cursor-pointer ${
+                            className={`px-3 py-1.5 rounded-lg border font-bold text-[9px] cursor-pointer ${
                               u.isBlocked
                                 ? "bg-red-50 border-red-200 text-red-600"
                                 : "bg-white border-zinc-200 text-zinc-500 hover:bg-zinc-50"
@@ -590,38 +639,65 @@ export default function AdminDashboard() {
                 <form onSubmit={handleAdminPasswordChange} className="flex flex-col gap-4">
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-bold text-zinc-500">Current Password</label>
-                    <input
-                      type="password"
-                      value={currentPassword}
-                      onChange={(e) => setCurrentPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="px-3.5 py-2 border border-zinc-250 rounded-lg text-sm bg-white"
-                      required
-                    />
+                    <div className="relative">
+                      <input
+                        type={showCurrentPassword ? "text" : "password"}
+                        value={currentPassword}
+                        onChange={(e) => setCurrentPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="w-full px-3.5 py-2 pr-10 border border-zinc-250 rounded-lg text-sm bg-white"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 focus:outline-none cursor-pointer flex items-center"
+                      >
+                        {showCurrentPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
                   </div>
 
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-bold text-zinc-500">New Password</label>
-                    <input
-                      type="password"
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="px-3.5 py-2 border border-zinc-250 rounded-lg text-sm bg-white"
-                      required
-                    />
+                    <div className="relative">
+                      <input
+                        type={showNewPassword ? "text" : "password"}
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="w-full px-3.5 py-2 pr-10 border border-zinc-250 rounded-lg text-sm bg-white"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowNewPassword(!showNewPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 focus:outline-none cursor-pointer flex items-center"
+                      >
+                        {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
                   </div>
 
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-bold text-zinc-500">Confirm New Password</label>
-                    <input
-                      type="password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="px-3.5 py-2 border border-zinc-250 rounded-lg text-sm bg-white"
-                      required
-                    />
+                    <div className="relative">
+                      <input
+                        type={showConfirmPassword ? "text" : "password"}
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="w-full px-3.5 py-2 pr-10 border border-zinc-250 rounded-lg text-sm bg-white"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 focus:outline-none cursor-pointer flex items-center"
+                      >
+                        {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
                   </div>
 
                   <button

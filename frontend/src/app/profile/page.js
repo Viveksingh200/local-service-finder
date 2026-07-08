@@ -7,10 +7,10 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/context/authContext";
 import { useLanguage } from "@/context/languageContext";
-import { User, Lock, Save, KeyRound, CheckCircle } from "lucide-react";
+import { User, Lock, Save, KeyRound, CheckCircle, Eye, EyeOff } from "lucide-react";
 
 export default function UserProfile() {
-  const { user, loading, logout, updateUserState } = useAuth();
+  const { user, loading, logout, updateUserState, updateLocation } = useAuth();
   const { t, language } = useLanguage();
   const router = useRouter();
 
@@ -23,7 +23,8 @@ export default function UserProfile() {
 
   // Profile Form States
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  const [city, setCity] = useState("");
+  const [area, setArea] = useState("");
   const [updatingProfile, setUpdatingProfile] = useState(false);
   const [profileSuccess, setProfileSuccess] = useState("");
   const [profileError, setProfileError] = useState("");
@@ -35,12 +36,16 @@ export default function UserProfile() {
   const [updatingPassword, setUpdatingPassword] = useState(false);
   const [passwordSuccess, setPasswordSuccess] = useState("");
   const [passwordError, setPasswordError] = useState("");
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Set user values
   useEffect(() => {
     if (user) {
       setName(user.name || "");
-      setEmail(user.email || "");
+      setCity(user.city || "");
+      setArea(user.area || "");
     }
   }, [user]);
 
@@ -67,7 +72,7 @@ export default function UserProfile() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ name, email })
+        body: JSON.stringify({ name, city, area })
       });
 
       const data = await res.json();
@@ -76,6 +81,7 @@ export default function UserProfile() {
       }
 
       updateUserState(data.user);
+      updateLocation({ city: data.user.city, area: data.user.area });
       setProfileSuccess("Profile details updated successfully!");
       setTimeout(() => setProfileSuccess(""), 3000);
     } catch (err) {
@@ -192,15 +198,33 @@ export default function UserProfile() {
                 </span>
               </div>
 
+
+
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold text-zinc-500">{t.email}</label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder={t.emailPlaceholder}
-                  className="px-4 py-2.5 bg-zinc-100 hover:bg-zinc-150/50 focus:bg-white rounded-xl text-sm transition-all duration-200 outline-none focus:ring-2 focus:ring-amber-500/20"
+                <label className="text-xs font-bold text-zinc-500">{t.city}</label>
+                <select
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  className="px-4 py-2.5 bg-zinc-100 hover:bg-zinc-150/50 focus:bg-white rounded-xl text-sm transition-all duration-200 outline-none focus:ring-2 focus:ring-amber-500/20 bg-white"
                   required
+                >
+                  <option value="">{t.cityPlaceholder}</option>
+                  <option value="Mumbai">Mumbai</option>
+                  <option value="Navi Mumbai">Navi Mumbai</option>
+                  <option value="Pune">Pune</option>
+                  <option value="Delhi">Delhi</option>
+                  <option value="Bangalore">Bangalore</option>
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-zinc-500">{t.area}</label>
+                <input
+                  type="text"
+                  value={area}
+                  onChange={(e) => setArea(e.target.value)}
+                  placeholder={t.areaPlaceholder}
+                  className="px-4 py-2.5 bg-zinc-100 hover:bg-zinc-150/50 focus:bg-white rounded-xl text-sm transition-all duration-200 outline-none focus:ring-2 focus:ring-amber-500/20"
                 />
               </div>
 
@@ -239,42 +263,69 @@ export default function UserProfile() {
                 <label className="text-xs font-bold text-zinc-500">
                   {language === "hi" ? "वर्तमान पासवर्ड" : "Current Password"}
                 </label>
-                <input
-                  type="password"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="px-4 py-2.5 bg-zinc-100 hover:bg-zinc-150/50 focus:bg-white rounded-xl text-sm transition-all duration-200 outline-none focus:ring-2 focus:ring-amber-500/20"
-                  required
-                />
+                <div className="relative">
+                  <input
+                    type={showCurrentPassword ? "text" : "password"}
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full px-4 py-2.5 pr-10 bg-zinc-100 hover:bg-zinc-150/50 focus:bg-white rounded-xl text-sm transition-all duration-200 outline-none focus:ring-2 focus:ring-amber-500/20"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 focus:outline-none cursor-pointer flex items-center"
+                  >
+                    {showCurrentPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
 
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-bold text-zinc-500">
                   {language === "hi" ? "नया पासवर्ड" : "New Password"}
                 </label>
-                <input
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="px-4 py-2.5 bg-zinc-100 hover:bg-zinc-150/50 focus:bg-white rounded-xl text-sm transition-all duration-200 outline-none focus:ring-2 focus:ring-amber-500/20"
-                  required
-                />
+                <div className="relative">
+                  <input
+                    type={showNewPassword ? "text" : "password"}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full px-4 py-2.5 pr-10 bg-zinc-100 hover:bg-zinc-150/50 focus:bg-white rounded-xl text-sm transition-all duration-200 outline-none focus:ring-2 focus:ring-amber-500/20"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 focus:outline-none cursor-pointer flex items-center"
+                  >
+                    {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
 
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-bold text-zinc-500">
                   {language === "hi" ? "नए पासवर्ड की पुष्टि करें" : "Confirm New Password"}
                 </label>
-                <input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="px-4 py-2.5 bg-zinc-100 hover:bg-zinc-150/50 focus:bg-white rounded-xl text-sm transition-all duration-200 outline-none focus:ring-2 focus:ring-amber-500/20"
-                  required
-                />
+                <div className="relative">
+                  <input
+                    type={showConfirmPassword ? "text" : "password"}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full px-4 py-2.5 pr-10 bg-zinc-100 hover:bg-zinc-150/50 focus:bg-white rounded-xl text-sm transition-all duration-200 outline-none focus:ring-2 focus:ring-amber-500/20"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 focus:outline-none cursor-pointer flex items-center"
+                  >
+                    {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
 
               <button

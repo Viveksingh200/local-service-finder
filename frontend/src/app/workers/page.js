@@ -1,6 +1,6 @@
 "use client";
 
-import { API_BASE_URL } from "@/config";
+import { API_BASE_URL, getProfileImageUrl } from "@/config";
 import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
@@ -12,7 +12,7 @@ import { Search, MapPin, Star, Filter, ArrowRight, CheckCircle2 } from "lucide-r
 function SearchResultsContent() {
   const searchParams = useSearchParams();
   const { t, language } = useLanguage();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, currentLocation } = useAuth();
 
   const handleProfileClick = (e, slug) => {
     if (!isAuthenticated) {
@@ -34,6 +34,14 @@ function SearchResultsContent() {
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState([]);
+
+  // Sync with global location context if URL location parameter is not provided
+  useEffect(() => {
+    if (!searchParams.get("location") && currentLocation) {
+      setCity(currentLocation.city || "");
+      setArea(currentLocation.area || "");
+    }
+  }, [currentLocation]);
 
   // Fetch categories for filter dropdown
   useEffect(() => {
@@ -231,7 +239,7 @@ function SearchResultsContent() {
                       <div className="flex justify-between items-start gap-4 mb-4">
                         <div className="relative h-16 w-16 rounded-xl border border-gray-100 overflow-hidden shrink-0">
                           {worker.profileImage ? (
-                            <img src={worker.profileImage} alt={worker.name} className="h-full w-full object-cover" />
+                            <img src={getProfileImageUrl(worker.profileImage)} alt={worker.name} className="h-full w-full object-cover" />
                           ) : (
                             <div className="h-full w-full flex items-center justify-center bg-amber-100 text-amber-700 font-bold text-lg">
                               {worker.name.charAt(0).toUpperCase()}

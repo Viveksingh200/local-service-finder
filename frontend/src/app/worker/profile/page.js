@@ -1,16 +1,16 @@
 "use client";
 
-import { API_BASE_URL } from "@/config";
+import { API_BASE_URL, getProfileImageUrl } from "@/config";
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/context/authContext";
 import { useLanguage } from "@/context/languageContext";
-import { User, Lock, Save, KeyRound, CheckCircle, ArrowLeft, ShieldAlert } from "lucide-react";
+import { User, Lock, Save, KeyRound, CheckCircle, ArrowLeft, ShieldAlert, Camera, Trash2, Loader2, Navigation, Eye, EyeOff } from "lucide-react";
 
 export default function WorkerProfilePage() {
-  const { user, workerProfile, loading, updateProfileState } = useAuth();
+  const { user, workerProfile, loading, updateProfileState, updateUserState, updateLocation } = useAuth();
   const { t, language } = useLanguage();
   const router = useRouter();
 
@@ -24,20 +24,24 @@ export default function WorkerProfilePage() {
   // Form states for profile details
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [email, setEmail] = useState("");
+  const [categories, setCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [customCategory, setCustomCategory] = useState("");
+  const [serviceAreas, setServiceAreas] = useState("");
   const [profession, setProfession] = useState("");
   const [experience, setExperience] = useState(0);
   const [description, setDescription] = useState("");
-  const [serviceCategories, setServiceCategories] = useState("");
-  const [serviceAreas, setServiceAreas] = useState("");
   const [city, setCity] = useState("");
   const [area, setArea] = useState("");
+  const [country, setCountry] = useState("");
   const [profileImage, setProfileImage] = useState("");
-  const [aadhaarNumber, setAadhaarNumber] = useState("");
 
   const [saving, setSaving] = useState(false);
   const [profileSuccess, setProfileSuccess] = useState("");
   const [profileError, setProfileError] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+  const [fetchingLocation, setFetchingLocation] = useState(false);
 
   // Password change states
   const [currentPassword, setCurrentPassword] = useState("");
@@ -46,24 +50,134 @@ export default function WorkerProfilePage() {
   const [updatingPassword, setUpdatingPassword] = useState(false);
   const [passwordSuccess, setPasswordSuccess] = useState("");
   const [passwordError, setPasswordError] = useState("");
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Set user and profile details on load
   useEffect(() => {
     if (workerProfile) {
       setName(workerProfile.name || "");
       setPhone(workerProfile.phone || "");
-      setEmail(workerProfile.email || "");
       setProfession(workerProfile.profession || "");
       setExperience(workerProfile.experience || 0);
       setDescription(workerProfile.description || "");
-      setServiceCategories(workerProfile.serviceCategories?.join(", ") || "");
       setServiceAreas(workerProfile.serviceAreas?.join(", ") || "");
       setCity(workerProfile.city || "");
       setArea(workerProfile.area || "");
+      setCountry(workerProfile.country || "");
       setProfileImage(workerProfile.profileImage || "");
-      setAadhaarNumber(workerProfile.aadhaarNumber || "");
     }
   }, [workerProfile]);
+
+  // Fetch categories from database
+  useEffect(() => {
+    const fetchCats = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/categories`);
+        const data = await res.json();
+        if (data.success) {
+          setCategories(data.categories);
+        }
+      } catch (err) {
+        console.error("Failed to load categories:", err);
+      }
+    };
+    fetchCats();
+  }, []);
+
+  // Sync category state once categories and profile are loaded
+  useEffect(() => {
+    if (workerProfile && categories.length > 0) {
+      const firstCat = workerProfile.serviceCategories?.[0] || "";
+      if (firstCat) {
+        const isKnown = categories.some((c) => c.name.toLowerCase() === firstCat.toLowerCase());
+        if (isKnown) {
+          const matched = categories.find((c) => c.name.toLowerCase() === firstCat.toLowerCase());
+          setSelectedCategory(matched.name);
+          setCustomCategory("");
+        } else {
+          setSelectedCategory("Others");
+          setCustomCategory(firstCat);
+        }
+      } else {
+        setSelectedCategory("");
+        setCustomCategory("");
+      }
+    }
+  }, [workerProfile, categories]);
+
+  // Handle File Upload and conversion to base64
+  const handleImageChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadError(language === "hi" ? "फ़ाइल का आकार 5MB से कम होना चाहिए।" : "File size must be less than 5MB.");
+      return;
+    }
+
+    setUploading(true);
+    setUploadError("");
+
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onloadend = async () => {
+      const base64Data = reader.result;
+      const token = localStorage.getItem("authToken");
+
+      try {
+        const res = await fetch(`${API_BASE_URL}/workers/upload-avatar`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({ image: base64Data })
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.message || "Failed to upload image");
+        }
+
+        setProfileImage(data.url);
+      } catch (err) {
+        console.error("Upload error:", err);
+        setUploadError(err.message || (language === "hi" ? "अपलोड करने में विफल।" : "Failed to upload image."));
+      } finally {
+        setUploading(false);
+      }
+    };
+  };
+
+  // Drag and Drop handlers
+  const [dragActive, setDragActive] = useState(false);
+  const handleDrag = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const file = e.dataTransfer.files[0];
+      if (file.type.startsWith("image/")) {
+        const event = { target: { files: [file] } };
+        await handleImageChange(event);
+      } else {
+        setUploadError(language === "hi" ? "कृपया केवल चित्र फ़ाइलें अपलोड करें।" : "Please upload image files only.");
+      }
+    }
+  };
 
   if (loading || !user || !workerProfile) {
     return (
@@ -81,10 +195,15 @@ export default function WorkerProfilePage() {
     setProfileSuccess("");
 
     const token = localStorage.getItem("authToken");
-    const categoriesArray = serviceCategories
-      .split(",")
-      .map((c) => c.trim())
-      .filter((c) => c !== "");
+    
+    const finalCategory = selectedCategory === "Others" ? customCategory : selectedCategory;
+    if (selectedCategory === "Others" && !customCategory.trim()) {
+      setProfileError(language === "hi" ? "कृपया अपनी श्रेणी निर्दिष्ट करें।" : "Please specify your custom category.");
+      setSaving(false);
+      return;
+    }
+
+    const categoriesArray = finalCategory ? [finalCategory.trim()] : [];
     const areasArray = serviceAreas
       .split(",")
       .map((a) => a.trim())
@@ -100,7 +219,6 @@ export default function WorkerProfilePage() {
         body: JSON.stringify({
           name,
           phone,
-          email,
           profession,
           experience: parseInt(experience),
           description,
@@ -108,8 +226,8 @@ export default function WorkerProfilePage() {
           serviceAreas: areasArray,
           city,
           area,
-          profileImage,
-          aadhaarNumber
+          country,
+          profileImage
         })
       });
 
@@ -119,14 +237,80 @@ export default function WorkerProfilePage() {
       }
 
       updateProfileState(data.worker);
-      setProfileSuccess("Professional profile updated successfully!");
+      if (data.user) {
+        updateUserState(data.user);
+      }
+      setProfileSuccess(
+        language === "hi" 
+          ? "व्यावसायिक प्रोफ़ाइल सफलतापूर्वक अपडेट की गई!" 
+          : "Professional profile updated successfully!"
+      );
+      updateLocation({ city: data.worker.city, area: data.worker.area });
       window.scrollTo({ top: 0, behavior: "smooth" });
-      setTimeout(() => setProfileSuccess(""), 3000);
+      setTimeout(() => setProfileSuccess(""), 4000);
     } catch (err) {
       setProfileError(err.message || "Something went wrong.");
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleAutoFetchLocation = () => {
+    if (!navigator.geolocation) {
+      setProfileError(language === "hi" ? "आपका ब्राउज़र स्थान का समर्थन नहीं करता है।" : "Geolocation is not supported by your browser.");
+      return;
+    }
+
+    setFetchingLocation(true);
+    setProfileError("");
+    setProfileSuccess("");
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        try {
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&accept-language=en`
+          );
+          const data = await response.json();
+          const addr = data.address || {};
+          let rawCity = addr.city || addr.town || addr.village || addr.state_district || addr.county || "";
+          let rawArea = addr.suburb || addr.neighbourhood || addr.residential || addr.city_district || "";
+          
+          rawCity = rawCity.trim();
+          rawArea = rawArea.trim();
+          if (rawCity.toLowerCase().includes("mumbai")) {
+            if (rawCity.toLowerCase().includes("navi") || rawArea.toLowerCase().includes("navi")) {
+              rawCity = "Navi Mumbai";
+            } else {
+              rawCity = "Mumbai";
+            }
+          } else if (rawCity.toLowerCase().includes("delhi")) {
+            rawCity = "Delhi";
+          } else if (rawCity.toLowerCase().includes("pune")) {
+            rawCity = "Pune";
+          } else if (rawCity.toLowerCase().includes("bangalore") || rawCity.toLowerCase().includes("bengaluru")) {
+            rawCity = "Bangalore";
+          }
+          
+          setCity(rawCity);
+          setArea(rawArea);
+          setProfileSuccess(language === "hi" ? "स्थान सफलतापूर्वक प्राप्त किया गया!" : "Location coordinates successfully resolved!");
+          setTimeout(() => setProfileSuccess(""), 4000);
+        } catch (err) {
+          console.error("Reverse geocoding failed:", err);
+          setProfileError(language === "hi" ? "स्थान पता करने में विफलता।" : "Failed to resolve GPS coordinates.");
+        } finally {
+          setFetchingLocation(false);
+        }
+      },
+      (error) => {
+        console.error("GPS fetching failed:", error);
+        setProfileError(language === "hi" ? "स्थान की अनुमति अस्वीकृत की गई।" : "Geolocation access was denied or timed out.");
+        setFetchingLocation(false);
+      },
+      { timeout: 8000 }
+    );
   };
 
   // Handle Password Change
@@ -248,17 +432,7 @@ export default function WorkerProfilePage() {
                       />
                     </div>
 
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-xs font-bold text-zinc-500">{t.email}</label>
-                      <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder={t.emailPlaceholder}
-                        className="px-4 py-2.5 bg-zinc-100 hover:bg-zinc-150/50 focus:bg-white rounded-xl text-sm transition-all duration-200 outline-none focus:ring-2 focus:ring-amber-500/20"
-                        required
-                      />
-                    </div>
+
                   </div>
                 </div>
 
@@ -294,16 +468,42 @@ export default function WorkerProfilePage() {
                       />
                     </div>
 
-                    <div className="flex flex-col gap-1.5 md:col-span-2">
-                      <label className="text-xs font-bold text-zinc-500">{language === "hi" ? "सेवा श्रेणियां (अल्पविराम से अलग करें)" : "Service Categories"}</label>
-                      <input
-                        type="text"
-                        value={serviceCategories}
-                        onChange={(e) => setServiceCategories(e.target.value)}
-                        placeholder="e.g. Electrical, Appliance Repair"
-                        className="px-4 py-2.5 bg-zinc-100 hover:bg-zinc-150/50 focus:bg-white rounded-xl text-sm transition-all duration-200 outline-none focus:ring-2 focus:ring-amber-500/20"
-                      />
+                    <div className="flex flex-col gap-1.5 md:col-span-2 text-left">
+                      <label className="text-xs font-bold text-zinc-500">{language === "hi" ? "सेवा श्रेणी" : "Service Category"}</label>
+                      <select
+                        value={selectedCategory}
+                        onChange={(e) => {
+                          setSelectedCategory(e.target.value);
+                          if (e.target.value !== "Others") {
+                            setCustomCategory("");
+                          }
+                        }}
+                        className="px-4 py-2.5 bg-zinc-100 hover:bg-zinc-150/50 focus:bg-white rounded-xl text-sm transition-all duration-200 outline-none focus:ring-2 focus:ring-amber-500/20 bg-white"
+                        required
+                      >
+                        <option value="">{language === "hi" ? "श्रेणी चुनें" : "Select Category"}</option>
+                        {categories.map((cat) => (
+                          <option key={cat._id} value={cat.name}>
+                            {cat.name}
+                          </option>
+                        ))}
+                        <option value="Others">{language === "hi" ? "अन्य" : "Others"}</option>
+                      </select>
                     </div>
+
+                    {selectedCategory === "Others" && (
+                      <div className="flex flex-col gap-1.5 md:col-span-2 text-left animate-fadeIn">
+                        <label className="text-xs font-bold text-zinc-500">{language === "hi" ? "अपनी श्रेणी लिखें" : "Specify Other Category"}</label>
+                        <input
+                          type="text"
+                          value={customCategory}
+                          onChange={(e) => setCustomCategory(e.target.value)}
+                          placeholder={language === "hi" ? "उदा. कार वॉश" : "e.g. Car Wash"}
+                          className="px-4 py-2.5 bg-zinc-100 hover:bg-zinc-150/50 focus:bg-white rounded-xl text-sm transition-all duration-200 outline-none focus:ring-2 focus:ring-amber-500/20"
+                          required
+                        />
+                      </div>
+                    )}
 
                     <div className="flex flex-col gap-1.5 md:col-span-2">
                       <label className="text-xs font-bold text-zinc-500">{language === "hi" ? "सेवा विवरण" : "Service Description"}</label>
@@ -317,6 +517,36 @@ export default function WorkerProfilePage() {
                       />
                     </div>
 
+                    <div className="md:col-span-2 text-left">
+                      <button
+                        type="button"
+                        onClick={handleAutoFetchLocation}
+                        disabled={fetchingLocation}
+                        className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-xl border border-amber-100 bg-amber-50 hover:bg-amber-100 text-amber-700 transition-all cursor-pointer disabled:opacity-50"
+                      >
+                        {fetchingLocation ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Navigation className="h-3.5 w-3.5 shrink-0" />
+                        )}
+                        <span>{language === "hi" ? "स्वचालित स्थान प्राप्त करें" : "Auto Fetch Location"}</span>
+                      </button>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-bold text-zinc-500">Country</label>
+                      <select
+                        value={country}
+                        onChange={(e) => setCountry(e.target.value)}
+                        className="px-4 py-2.5 bg-zinc-100 hover:bg-zinc-150/50 focus:bg-white rounded-xl text-sm transition-all duration-200 outline-none focus:ring-2 focus:ring-amber-500/20 bg-white"
+                        required
+                      >
+                        <option value="">Select Country</option>
+                        <option value="United States">United States</option>
+                        <option value="India">India</option>
+                      </select>
+                    </div>
+
                     <div className="flex flex-col gap-1.5">
                       <label className="text-xs font-bold text-zinc-500">{language === "hi" ? "शहर" : "City"}</label>
                       <input
@@ -328,7 +558,7 @@ export default function WorkerProfilePage() {
                         required
                       />
                     </div>
-
+ 
                     <div className="flex flex-col gap-1.5">
                       <label className="text-xs font-bold text-zinc-500">{language === "hi" ? "लोकेशन/क्षेत्र" : "Area"}</label>
                       <input
@@ -361,35 +591,119 @@ export default function WorkerProfilePage() {
                   </h3>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-xs font-bold text-zinc-500">{language === "hi" ? "प्रोफ़ाइल फोटो URL" : "Profile Photo URL"}</label>
-                      <input
-                        type="text"
-                        value={profileImage}
-                        onChange={(e) => setProfileImage(e.target.value)}
-                        placeholder="https://example.com/avatar.jpg"
-                        className="px-4 py-2.5 bg-zinc-100 hover:bg-zinc-150/50 focus:bg-white rounded-xl text-sm transition-all duration-200 outline-none focus:ring-2 focus:ring-amber-500/20"
-                      />
-                    </div>
+                    <div className="flex flex-col gap-2 md:col-span-2">
+                      <label className="text-xs font-bold text-zinc-500">
+                        {language === "hi" ? "प्रोफ़ाइल फोटो" : "Profile Photo"}
+                      </label>
+                      
+                      <div className={`flex flex-col sm:flex-row items-center gap-6 p-4 rounded-2xl bg-zinc-50 border border-dashed hover:border-amber-500 transition-colors relative ${dragActive ? "border-amber-500 bg-amber-50/20" : "border-zinc-200"}`}>
+                        {/* Drag overlay trigger */}
+                        <div
+                          onDragEnter={handleDrag}
+                          onDragOver={handleDrag}
+                          onDragLeave={handleDrag}
+                          onDrop={handleDrop}
+                          className="absolute inset-0 z-10 rounded-2xl cursor-pointer"
+                        />
 
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-xs font-bold text-zinc-500">{language === "hi" ? "आधार कार्ड नंबर" : "Aadhaar Card Number"}</label>
-                      <input
-                        type="text"
-                        value={aadhaarNumber}
-                        onChange={(e) => setAadhaarNumber(e.target.value)}
-                        placeholder="e.g. 123456789012"
-                        maxLength={12}
-                        className="px-4 py-2.5 bg-zinc-100 hover:bg-zinc-150/50 focus:bg-white rounded-xl text-sm transition-all duration-200 outline-none focus:ring-2 focus:ring-amber-500/20"
-                      />
+                        {/* Preview and Edit button */}
+                        <div className="relative group h-24 w-24 rounded-2xl border border-zinc-200 overflow-hidden bg-white shrink-0 flex items-center justify-center shadow-sm z-20">
+                          {profileImage ? (
+                            <img
+                              src={getProfileImageUrl(profileImage)}
+                              alt="Avatar Preview"
+                              className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            />
+                          ) : (
+                            <div className="h-full w-full flex items-center justify-center bg-amber-50 text-amber-600 font-extrabold text-3xl">
+                              {name ? name.charAt(0).toUpperCase() : <User className="h-8 w-8 text-amber-500" />}
+                            </div>
+                          )}
+
+                          {uploading && (
+                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-white z-30">
+                              <Loader2 className="h-6 w-6 animate-spin" />
+                            </div>
+                          )}
+                          
+                          {/* Hover edit camera overlay */}
+                          <label className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer z-20">
+                            <Camera className="h-6 w-6 text-white" />
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={handleImageChange}
+                              disabled={uploading}
+                              className="hidden"
+                            />
+                          </label>
+                        </div>
+
+                        {/* File Selector details / drag details */}
+                        <div className="flex-1 text-center sm:text-left z-20">
+                          <p className="text-xs font-bold text-zinc-700">
+                            {uploading 
+                              ? (language === "hi" ? "अपलोड किया जा रहा है..." : "Uploading image...") 
+                              : (language === "hi" ? "खींचें और छोड़ें या ब्राउज़ करें" : "Drag & drop your photo or browse")}
+                          </p>
+                          <p className="text-[10px] text-zinc-400 mt-1">
+                            {language === "hi" 
+                              ? "JPEG, PNG, WebP सपोर्टेड। अधिकतम 5MB।" 
+                              : "Supports JPG, PNG, or WebP. Max size 5MB."}
+                          </p>
+                          
+                          <div className="flex items-center gap-3 mt-3 justify-center sm:justify-start">
+                            <label className="px-3.5 py-1.5 text-[11px] font-bold bg-white border border-zinc-200 text-zinc-700 rounded-lg shadow-sm hover:bg-zinc-50 cursor-pointer transition-colors">
+                              <span>{language === "hi" ? "फोटो चुनें" : "Select File"}</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleImageChange}
+                                disabled={uploading}
+                                className="hidden"
+                              />
+                            </label>
+
+                            {profileImage && (
+                              <button
+                                type="button"
+                                onClick={() => setProfileImage("")}
+                                className="text-[11px] font-bold text-red-500 hover:text-red-600 transition-colors flex items-center gap-1 cursor-pointer"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                                <span>{language === "hi" ? "हटाएं" : "Remove"}</span>
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {uploadError && (
+                        <p className="text-[10px] text-red-655 bg-red-50 px-3 py-1.5 rounded-lg border border-red-100 font-semibold w-fit mt-1">
+                          {uploadError}
+                        </p>
+                      )}
                     </div>
+                    
                   </div>
                 </div>
+
+                {profileError && (
+                  <div className="bg-red-50 text-red-650 text-xs font-semibold p-4 rounded-2xl text-left border border-red-100 shadow-sm shadow-red-500/5">
+                    {profileError}
+                  </div>
+                )}
+                {profileSuccess && (
+                  <div className="bg-emerald-50 text-emerald-700 text-xs font-semibold p-4 rounded-2xl text-left border border-emerald-100 flex items-center gap-2 animate-fadeIn shadow-sm shadow-emerald-500/5">
+                    <CheckCircle className="h-4 w-4 shrink-0 text-emerald-500" />
+                    <span>{profileSuccess}</span>
+                  </div>
+                )}
 
                 <button
                   type="submit"
                   disabled={saving}
-                  className="mt-6 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-zinc-900 to-zinc-950 text-white py-3 font-extrabold text-sm hover:from-zinc-950 hover:to-black shadow-md shadow-zinc-900/10 transition-all duration-200 cursor-pointer disabled:opacity-50"
+                  className="mt-2 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-zinc-900 to-zinc-950 text-white py-3 font-extrabold text-sm hover:from-zinc-950 hover:to-black shadow-md shadow-zinc-900/10 transition-all duration-200 cursor-pointer disabled:opacity-50"
                 >
                   <Save className="h-4 w-4" />
                   <span>{saving ? (language === "hi" ? "सहेज रहा है..." : "Saving...") : (language === "hi" ? "विवरण सहेजें" : "Save Profile Details")}</span>
@@ -451,42 +765,69 @@ export default function WorkerProfilePage() {
                   <label className="text-[10px] font-extrabold text-zinc-400 uppercase tracking-wider">
                     {language === "hi" ? "वर्तमान पासवर्ड" : "Current Password"}
                   </label>
-                  <input
-                    type="password"
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="px-4 py-2.5 bg-zinc-100 hover:bg-zinc-150/50 focus:bg-white rounded-xl text-xs outline-none transition-all duration-200 focus:ring-2 focus:ring-amber-500/20"
-                    required
-                  />
+                  <div className="relative">
+                    <input
+                      type={showCurrentPassword ? "text" : "password"}
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full px-4 py-2.5 pr-10 bg-zinc-100 hover:bg-zinc-150/50 focus:bg-white rounded-xl text-xs outline-none transition-all duration-200 focus:ring-2 focus:ring-amber-500/20"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 focus:outline-none cursor-pointer flex items-center"
+                    >
+                      {showCurrentPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="flex flex-col gap-1">
                   <label className="text-[10px] font-extrabold text-zinc-400 uppercase tracking-wider">
                     {language === "hi" ? "नया पासवर्ड" : "New Password"}
                   </label>
-                  <input
-                    type="password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="px-4 py-2.5 bg-zinc-100 hover:bg-zinc-150/50 focus:bg-white rounded-xl text-xs outline-none transition-all duration-200 focus:ring-2 focus:ring-amber-500/20"
-                    required
-                  />
+                  <div className="relative">
+                    <input
+                      type={showNewPassword ? "text" : "password"}
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full px-4 py-2.5 pr-10 bg-zinc-100 hover:bg-zinc-150/50 focus:bg-white rounded-xl text-xs outline-none transition-all duration-200 focus:ring-2 focus:ring-amber-500/20"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 focus:outline-none cursor-pointer flex items-center"
+                    >
+                      {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="flex flex-col gap-1">
                   <label className="text-[10px] font-extrabold text-zinc-400 uppercase tracking-wider">
                     {language === "hi" ? "नए पासवर्ड की पुष्टि करें" : "Confirm Password"}
                   </label>
-                  <input
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="px-4 py-2.5 bg-zinc-100 hover:bg-zinc-150/50 focus:bg-white rounded-xl text-xs outline-none transition-all duration-200 focus:ring-2 focus:ring-amber-500/20"
-                    required
-                  />
+                  <div className="relative">
+                    <input
+                      type={showConfirmPassword ? "text" : "password"}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full px-4 py-2.5 pr-10 bg-zinc-100 hover:bg-zinc-150/50 focus:bg-white rounded-xl text-xs outline-none transition-all duration-200 focus:ring-2 focus:ring-amber-500/20"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 focus:outline-none cursor-pointer flex items-center"
+                    >
+                      {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
                 </div>
 
                 <button

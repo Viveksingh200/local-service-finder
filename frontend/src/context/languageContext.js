@@ -61,7 +61,15 @@ const translations = {
     roleUser: "User (Looking for Services)",
     roleWorker: "Worker (Offering Services)",
     availability: "Availability",
-    dashboard: "Dashboard"
+    dashboard: "Dashboard",
+    city: "City",
+    area: "Area/Location",
+    cityPlaceholder: "Select or enter city",
+    areaPlaceholder: "Enter area/locality",
+    workersNearYou: "Workers Near You",
+    showingWorkersIn: "Showing professionals in",
+    changeLocation: "Change Location",
+    useCurrentLocation: "Use Current Location"
   },
   hi: {
     brand: "वर्कर्स",
@@ -121,7 +129,15 @@ const translations = {
     roleUser: "उपयोगकर्ता (सेवाओं की तलाश में)",
     roleWorker: "पेशेवर / कार्यकर्ता (सेवाएं प्रदान करने के लिए)",
     availability: "उपलब्धता",
-    dashboard: "डैशबोर्ड"
+    dashboard: "डैशबोर्ड",
+    city: "शहर",
+    area: "क्षेत्र/लोकेशन",
+    cityPlaceholder: "शहर चुनें या दर्ज करें",
+    areaPlaceholder: "क्षेत्र दर्ज करें",
+    workersNearYou: "आपके आस-पास के पेशेवर",
+    showingWorkersIn: "यहाँ पेशेवर दिखा रहे हैं:",
+    changeLocation: "स्थान बदलें",
+    useCurrentLocation: "वर्तमान स्थान का उपयोग करें"
   }
 };
 

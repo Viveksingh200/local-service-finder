@@ -2,49 +2,12 @@
 
 import React, { useState, useEffect } from "react";
 import { useLanguage } from "../context/languageContext";
-import {
-  Snowflake,
-  Wrench,
-  Zap,
-  WashingMachine,
-  Sparkles,
-  Leaf,
-  HelpCircle
-} from "lucide-react";
-
 import { API_BASE_URL } from "@/config";
 
 const BACKEND_URL = API_BASE_URL;
 
-const iconMap = {
-  Snowflake: Snowflake,
-  Wrench: Wrench,
-  Zap: Zap,
-  WashingMachine: WashingMachine,
-  Sparkles: Sparkles,
-  Leaf: Leaf,
-  HelpCircle: HelpCircle
-};
-
-const colorMap = {
-  "ac-repair": { color: "text-blue-500", bgColor: "bg-blue-50" },
-  "plumbing": { color: "text-amber-500", bgColor: "bg-amber-50" },
-  "electrical": { color: "text-emerald-500", bgColor: "bg-emerald-50" },
-  "appliance-repair": { color: "text-indigo-500", bgColor: "bg-indigo-50" },
-  "house-cleaning": { color: "text-purple-500", bgColor: "bg-purple-50" },
-  "gardening": { color: "text-green-500", bgColor: "bg-green-50" },
-};
-
-const defaultColors = [
-  { color: "text-orange-500", bgColor: "bg-orange-50" },
-  { color: "text-rose-500", bgColor: "bg-rose-50" },
-  { color: "text-cyan-500", bgColor: "bg-cyan-50" },
-  { color: "text-teal-500", bgColor: "bg-teal-50" },
-  { color: "text-pink-500", bgColor: "bg-pink-50" }
-];
-
 export default function PopularServices() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -53,32 +16,26 @@ export default function PopularServices() {
     {
       name: t.acRepair,
       slug: "ac-repair",
-      icon: "Snowflake",
     },
     {
       name: t.plumbing,
       slug: "plumbing",
-      icon: "Wrench",
     },
     {
       name: t.electrical,
       slug: "electrical",
-      icon: "Zap",
     },
     {
       name: t.applianceRepair,
       slug: "appliance-repair",
-      icon: "WashingMachine",
     },
     {
       name: t.houseCleaning,
       slug: "house-cleaning",
-      icon: "Sparkles",
     },
     {
       name: t.gardening,
       slug: "gardening",
-      icon: "Leaf",
     },
   ];
 
@@ -107,7 +64,7 @@ export default function PopularServices() {
     return (
       <section className="mx-auto max-w-7xl px-6 md:py-10 py-4 lg:px-8 bg-transparent">
         <div className="pb-1">
-          <h2 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold tracking-tight text-zinc-900">
+          <h2 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-black tracking-tight text-zinc-900">
             {t.popularTitle}
           </h2>
         </div>
@@ -115,11 +72,8 @@ export default function PopularServices() {
           {[...Array(6)].map((_, index) => (
             <div
               key={index}
-              className="flex flex-col items-center justify-center rounded-lg bg-white p-5 md:p-6 text-center shadow-sm w-36 md:w-auto shrink-0 md:shrink animate-pulse"
-            >
-              <div className="h-12 w-12 rounded-lg bg-zinc-100"></div>
-              <div className="mt-4 h-4 w-20 rounded bg-zinc-100"></div>
-            </div>
+              className="h-12 rounded-xl bg-white border border-gray-150 animate-pulse w-36 md:w-auto shrink-0 md:shrink"
+            ></div>
           ))}
         </div>
       </section>
@@ -130,7 +84,7 @@ export default function PopularServices() {
     <section className="mx-auto max-w-7xl px-6 md:py-10 py-4 lg:px-8 bg-transparent transition-colors duration-300">
       {/* Title Header */}
       <div className="pb-1">
-        <h2 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold tracking-tight text-zinc-900">
+        <h2 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-black tracking-tight text-zinc-900">
           {t.popularTitle}
         </h2>
       </div>
@@ -139,24 +93,26 @@ export default function PopularServices() {
       <div className="mt-8 flex flex-row overflow-x-auto md:grid md:grid-cols-3 lg:grid-cols-6 gap-4 pb-4 md:pb-0 scrollbar-none scroll-smooth">
         {categories.map((cat, index) => {
           const slug = cat.slug || "";
-          const styling = colorMap[slug] || defaultColors[Math.abs(slug.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0)) % defaultColors.length];
-          const Icon = iconMap[cat.icon] || Wrench;
+
+          // Determine Tailwind dynamic text hover and border color safely
+          const hoverTextColors = {
+            "ac-repair": "hover:text-blue-600 hover:border-blue-300",
+            "plumbing": "hover:text-amber-600 hover:border-amber-300",
+            "electrical": "hover:text-emerald-600 hover:border-emerald-300",
+            "appliance-repair": "hover:text-indigo-600 hover:border-indigo-300",
+            "house-cleaning": "hover:text-purple-600 hover:border-purple-300",
+            "gardening": "hover:text-green-600 hover:border-green-300",
+          };
+          const hoverClass = hoverTextColors[slug] || "hover:text-orange-600 hover:border-orange-300";
 
           return (
             <a
               href={`/workers?category=${encodeURIComponent(cat.name)}`}
               key={index}
-              className="group flex flex-col items-center justify-center rounded-lg bg-white p-5 md:p-6 text-center shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 cursor-pointer w-36 md:w-auto shrink-0 md:shrink"
+              className={`group flex items-center justify-center rounded-xl bg-white border border-gray-150 py-3.5 px-5 text-center shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 cursor-pointer w-36 md:w-auto shrink-0 md:shrink ${hoverClass}`}
             >
-              {/* Icon container */}
-              <div
-                className={`flex h-12 w-12 items-center justify-center rounded-lg ${styling.bgColor} ${styling.color} group-hover:scale-110 transition-transform duration-300`}
-              >
-                <Icon className="h-6 w-6" />
-              </div>
-              
               {/* Service name */}
-              <h3 className="mt-4 text-sm font-semibold text-zinc-800 group-hover:text-zinc-950 transition-colors truncate w-full px-1">
+              <h3 className="text-sm font-bold text-zinc-700 transition-colors truncate w-full px-1 group-hover:text-inherit">
                 {cat.name}
               </h3>
             </a>

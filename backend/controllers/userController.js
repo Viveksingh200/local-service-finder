@@ -17,9 +17,9 @@ const slugify = (text) => {
 
 export const registerUser = async (req, res) => {
     try {
-        const { name, email, phone, password, role } = req.body;
+        const { name, phone, password, role, country } = req.body;
 
-        if(!name || !email || !phone || !password){
+        if(!name || !phone || !password){
             return res.status(400).json({message: "All fields are required!"});
         };
 
@@ -33,10 +33,12 @@ export const registerUser = async (req, res) => {
 
         const newUser = await User.create({
             name: name,
-            email: email,
             phone: phone,
             password: hashedPassword,
-            role: role || "user"
+            role: role || "user",
+            city: req.body.city || "",
+            area: req.body.area || "",
+            country: country || ""
         });
 
         // If the registering user is a worker/provider, initialize their profile
@@ -49,7 +51,6 @@ export const registerUser = async (req, res) => {
                 userId: newUser._id,
                 name: newUser.name,
                 phone: newUser.phone.toString(),
-                email: newUser.email,
                 profession: req.body.profession || "Pending Setup",
                 description: req.body.description || "",
                 experience: req.body.experience || 0,
@@ -57,6 +58,7 @@ export const registerUser = async (req, res) => {
                 serviceAreas: req.body.serviceAreas || [],
                 city: req.body.city || "Pending",
                 area: req.body.area || "Pending",
+                country: newUser.country || "",
                 slug: slug,
                 approved: false
             });
@@ -98,7 +100,6 @@ export const loginUser = async (req, res) => {
         const payload = {
             id: user._id,
             name: user.name,
-            email: user.email,
             phone: user.phone,
             role: user.role
         }
@@ -125,9 +126,11 @@ export const loginUser = async (req, res) => {
                 user: {
                     id: user._id,
                     name: user.name,
-                    email: user.email,
                     phone: user.phone,
-                    role: user.role
+                    role: user.role,
+                    city: user.city || "",
+                    area: user.area || "",
+                    country: user.country || ""
                 },
                 workerProfile
             }
@@ -163,9 +166,9 @@ export const getUserProfile = async (req, res) => {
 
 export const updateUserProfile = async (req, res) => {
     try {
-        const { name, email } = req.body;
-        if (!name || !email) {
-            return res.status(400).json({ message: "Name and email are required!" });
+        const { name, city, area, country } = req.body;
+        if (!name) {
+            return res.status(400).json({ message: "Name is required!" });
         }
 
         const user = await User.findById(req.user.id);
@@ -174,15 +177,19 @@ export const updateUserProfile = async (req, res) => {
         }
 
         user.name = name;
-        user.email = email;
+        if (city !== undefined) user.city = city;
+        if (area !== undefined) user.area = area;
+        if (country !== undefined) user.country = country;
         await user.save();
 
-        // If user is a provider, update name/email in Worker profile too
+        // If user is a provider, update name/city/area/country in Worker profile too
         if (user.role === "provider") {
             const worker = await Worker.findOne({ userId: user._id });
             if (worker) {
                 worker.name = name;
-                worker.email = email;
+                if (city !== undefined) worker.city = city;
+                if (area !== undefined) worker.area = area;
+                if (country !== undefined) worker.country = country;
                 await worker.save();
             }
         }
@@ -193,9 +200,11 @@ export const updateUserProfile = async (req, res) => {
             user: {
                 id: user._id,
                 name: user.name,
-                email: user.email,
                 phone: user.phone,
-                role: user.role
+                role: user.role,
+                city: user.city || "",
+                area: user.area || "",
+                country: user.country || ""
             }
         });
     } catch (error) {
@@ -257,7 +266,6 @@ export const refreshAccessToken = async (req, res) => {
         const payload = {
             id: user._id,
             name: user.name,
-            email: user.email,
             phone: user.phone,
             role: user.role
         };

@@ -184,7 +184,7 @@ export default function WorkerDashboard() {
                   {language === "hi" ? "अपनी व्यावसायिक जानकारी अपडेट करें" : "Update Professional Listings"}
                 </h3>
                 <p className="text-xs text-zinc-400 mt-0.5">
-                  {language === "hi" ? "स्थान, श्रेणियाँ, सेवा विवरण और आधार कार्ड प्रबंधित करें।" : "Manage work areas, services categories, description & security password."}
+                  {language === "hi" ? "स्थान, श्रेणियाँ और सेवा विवरण प्रबंधित करें।" : "Manage work areas, services categories, description & security password."}
                 </p>
               </div>
               <button
@@ -319,8 +319,8 @@ export default function WorkerDashboard() {
               </div>
               <p className="text-[10px] text-zinc-400 mt-3 leading-relaxed">
                 {language === "hi"
-                  ? "उच्च रैंकिंग स्कोर प्राप्त करने के लिए अपनी प्रोफ़ाइल में आधार और विवरण जोड़ें।"
-                  : "Fill in all fields (description, experience, photo, Aadhaar) to achieve a higher platform ranking score."}
+                  ? "उच्च रैंकिंग स्कोर प्राप्त करने के लिए अपनी प्रोफ़ाइल में विवरण और फोटो जोड़ें।"
+                  : "Fill in all fields (description, experience, photo) to achieve a higher platform ranking score."}
               </p>
             </div>
           </div>

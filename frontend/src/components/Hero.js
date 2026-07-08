@@ -1,13 +1,24 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useLanguage } from "../context/languageContext";
+import { useAuth } from "../context/authContext";
 import { Search, MapPin } from "lucide-react";
 
 export default function Hero() {
   const { t } = useLanguage();
+  const { currentLocation } = useAuth();
   const [location, setLocation] = useState("");
   const [query, setQuery] = useState("");
+
+  useEffect(() => {
+    if (currentLocation) {
+      const locStr = currentLocation.area 
+        ? `${currentLocation.area}, ${currentLocation.city}` 
+        : currentLocation.city;
+      setLocation(locStr || "");
+    }
+  }, [currentLocation]);
 
   const handleSearch = (e) => {
     e.preventDefault();

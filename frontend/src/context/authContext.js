@@ -7,10 +7,43 @@ const AuthContext = createContext(null);
 
 const BACKEND_URL = API_BASE_URL;
 
+const normalizeLocation = (rawCity, rawArea) => {
+  let city = rawCity || "";
+  let area = rawArea || "";
+  
+  city = city.trim();
+  area = area.trim();
+
+  // Normalize City
+  if (/mumbai/i.test(city)) {
+    if (/navi/i.test(city) || /navi/i.test(area)) {
+      city = "Navi Mumbai";
+    } else {
+      city = "Mumbai";
+    }
+  } else if (/delhi/i.test(city)) {
+    city = "Delhi";
+  } else if (/pune/i.test(city)) {
+    city = "Pune";
+  } else if (/bangalore/i.test(city) || /bengaluru/i.test(city)) {
+    city = "Bangalore";
+  }
+  
+  // Normalize Area if possible to match seeded areas
+  const knownAreas = ["Belapur", "Seawoods", "Nerul", "Kharghar", "Vashi"];
+  const matchedArea = knownAreas.find(a => new RegExp(a, "i").test(area) || new RegExp(a, "i").test(city));
+  if (matchedArea) {
+    area = matchedArea;
+  }
+  
+  return { city, area };
+};
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [workerProfile, setWorkerProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [currentLocation, setCurrentLocation] = useState({ city: "Mumbai", area: "Belapur", country: "India" });
 
   // Set auth token in cookies (for SSR access) and localStorage
   const setAuthSession = (token, refreshToken, userData, workerData) => {
@@ -200,6 +233,110 @@ export function AuthProvider({ children }) {
     };
   }, [user]);
 
+  const updateLocation = async (loc) => {
+    const normalized = normalizeLocation(loc.city, loc.area);
+    const country = loc.country || user?.country || currentLocation?.country || "India";
+    const newLoc = { ...normalized, country };
+    setCurrentLocation(newLoc);
+    localStorage.setItem("currentLocation", JSON.stringify(newLoc));
+    
+    // If user is logged in, sync to backend profile
+    const savedToken = localStorage.getItem("authToken");
+    if (savedToken && user) {
+      try {
+        await fetch(`${BACKEND_URL}/user/profile`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${savedToken}`
+          },
+          body: JSON.stringify({
+            name: user.name,
+            city: normalized.city,
+            area: normalized.area,
+            country: country
+          })
+        });
+      } catch (err) {
+        console.error("Failed to sync location to profile:", err);
+      }
+    }
+  };
+
+  const detectLocationByIP = async () => {
+    try {
+      const response = await fetch("https://ipapi.co/json/");
+      const data = await response.json();
+      if (data.city) {
+        const normalized = normalizeLocation(data.city, data.org || "");
+        updateLocation({ city: normalized.city, area: "", country: data.country_name || "" });
+      } else {
+        updateLocation({ city: "Mumbai", area: "Belapur", country: "India" });
+      }
+    } catch (err) {
+      console.error("IP geolocation failed, using default:", err);
+      updateLocation({ city: "Mumbai", area: "Belapur", country: "India" });
+    }
+  };
+
+  const detectLocation = async (force = false) => {
+    // If not forced and we already have a saved location, use it
+    if (!force) {
+      const savedLoc = localStorage.getItem("currentLocation");
+      if (savedLoc) {
+        try {
+          const parsed = JSON.parse(savedLoc);
+          if (parsed.city) {
+            setCurrentLocation(parsed);
+            return;
+          }
+        } catch (e) {}
+      }
+      if (user?.city) {
+        setCurrentLocation({ city: user.city, area: user.area || "" });
+        return;
+      }
+    }
+
+    if (!navigator.geolocation) {
+      await detectLocationByIP();
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        try {
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&accept-language=en`
+          );
+          const data = await response.json();
+          const addr = data.address || {};
+          const rawCity = addr.city || addr.town || addr.village || addr.state_district || addr.county || "";
+          const rawArea = addr.suburb || addr.neighbourhood || addr.residential || addr.city_district || "";
+          const rawCountry = addr.country || "";
+          
+          const normalized = normalizeLocation(rawCity, rawArea);
+          updateLocation({ ...normalized, country: rawCountry });
+        } catch (err) {
+          console.error("Nominatim reverse geocoding failed, falling back to IP:", err);
+          await detectLocationByIP();
+        }
+      },
+      async (error) => {
+        console.warn("Geolocation permission denied or failed, falling back to IP:", error);
+        await detectLocationByIP();
+      },
+      { timeout: 8000 }
+    );
+  };
+
+  useEffect(() => {
+    if (!loading) {
+      detectLocation();
+    }
+  }, [loading, user]);
+
   const login = async (phone, password) => {
     try {
       const res = await fetch(`${BACKEND_URL}/user/login`, {
@@ -269,6 +406,9 @@ export function AuthProvider({ children }) {
         logout,
         updateProfileState,
         updateUserState,
+        currentLocation,
+        updateLocation,
+        detectLocation,
         isAuthenticated: !!user,
         isAdmin: user?.role === "admin",
         isWorker: user?.role === "provider"

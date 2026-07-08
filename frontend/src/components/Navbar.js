@@ -4,31 +4,152 @@ import React, { useState } from "react";
 import Image from "next/image";
 import { useLanguage } from "../context/languageContext";
 import { useAuth } from "../context/authContext";
-import { Globe, User, Calendar, LogOut, Briefcase } from "lucide-react";
+import { Globe, User, Calendar, LogOut, Briefcase, MapPin, ChevronDown, Navigation } from "lucide-react";
+import { getProfileImageUrl } from "@/config";
+import { useEffect } from "react";
+import { usePathname } from "next/navigation";
 
 export default function Navbar() {
   const { language, setSpecificLanguage, t } = useLanguage();
-  const { user, workerProfile, logout } = useAuth();
+  const { user, workerProfile, logout, currentLocation, updateLocation, detectLocation } = useAuth();
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [locationDropdownOpen, setLocationDropdownOpen] = useState(false);
+  const [editCity, setEditCity] = useState("");
+  const [editArea, setEditArea] = useState("");
+  
+  const pathname = usePathname();
+  const isWorkerOrAdminPanel = pathname?.startsWith("/worker") || pathname?.startsWith("/admin");
+
+  useEffect(() => {
+    if (currentLocation) {
+      setEditCity(currentLocation.city || "");
+      setEditArea(currentLocation.area || "");
+    }
+  }, [currentLocation]);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-gray-100 bg-white/85 backdrop-blur-md transition-colors duration-300">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6 lg:px-8">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-3 lg:px-0">
         
         {/* Logo */}
         <a href="/" className="flex items-center gap-2 cursor-pointer">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-amber-500 to-orange-600 shadow-md shadow-orange-500/20">
-            <Briefcase className="h-5 w-5 text-white" />
+          <div className="flex h-7 md:h-9 w-7 md:w-9 items-center justify-center rounded-lg md:rounded-xl bg-gradient-to-tr from-amber-500 to-orange-600 shadow-md shadow-orange-500/20">
+            <Briefcase className="h-3 md:h-5 w-3 md:w-5 text-white" />
           </div>
-          <span className="text-xl font-bold tracking-tight text-zinc-900">
+          <span className="text-sm md:text-xl font-bold tracking-tight text-zinc-900 hidden md:block">
             {t.brand}
           </span>
         </a>
 
         {/* Right Side Tools */}
         <div className="flex items-center gap-2 sm:gap-6">
+          {/* Location Picker */}
+          {!isWorkerOrAdminPanel && (
+            <div className="relative">
+              <button
+                onClick={() => setLocationDropdownOpen(!locationDropdownOpen)}
+                className="flex items-center gap-1.5 px-2 md:px-3 py-1.5 rounded-full border border-gray-200/80 hover:border-zinc-300 bg-gray-100 hover:bg-zinc-50 transition-all text-[10px] sm:text-xs font-semibold text-zinc-700 cursor-pointer focus:outline-none"
+              >
+                <MapPin className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                <span className="truncate max-w-[100px] sm:max-w-[150px]">
+                  {currentLocation?.area ? `${currentLocation.area}, ` : ""}{currentLocation?.city || "Mumbai"}
+                </span>
+                <ChevronDown className="h-3.5 w-3.5 text-zinc-400 shrink-0" />
+              </button>
+
+              {locationDropdownOpen && (
+                <>
+                  {/* Backdrop Close trigger */}
+                  <div
+                    className="fixed inset-0 z-10 cursor-default"
+                    onClick={() => setLocationDropdownOpen(false)}
+                  ></div>
+
+                  {/* Dropdown Card */}
+                  <div className="absolute -left-10 md:left-0 md:right-0 mt-2 w-64 origin-top-right rounded-2xl border border-gray-150 bg-white p-4 shadow-xl z-20 animate-fadeIn">
+                    <h3 className="text-xs font-black text-zinc-800 uppercase tracking-wider mb-3">
+                      {t.changeLocation}
+                    </h3>
+
+                    {/* Use Current Location Button */}
+                    <button
+                      onClick={async () => {
+                        await detectLocation(true);
+                        setLocationDropdownOpen(false);
+                      }}
+                      className="w-full mb-3 flex items-center justify-center gap-2 rounded-xl bg-amber-50 border border-amber-100 hover:bg-amber-100/50 text-amber-700 py-2 text-xs font-bold transition-colors cursor-pointer"
+                    >
+                      <Navigation className="h-3.5 w-3.5" />
+                      <span>{t.useCurrentLocation}</span>
+                    </button>
+
+                    <div className="space-y-3">
+                      {/* City Select */}
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[10px] font-bold text-zinc-400 uppercase text-left">{t.city}</label>
+                        <select
+                          value={editCity}
+                          onChange={(e) => {
+                            setEditCity(e.target.value);
+                            setEditArea("");
+                          }}
+                          className="w-full px-3 py-1.5 border border-zinc-200 rounded-lg text-xs bg-white text-zinc-700 focus:outline-none"
+                        >
+                          <option value="">{t.cityPlaceholder}</option>
+                          <option value="Mumbai">Mumbai</option>
+                          <option value="Navi Mumbai">Navi Mumbai</option>
+                          <option value="Pune">Pune</option>
+                          <option value="Delhi">Delhi</option>
+                          <option value="Bangalore">Bangalore</option>
+                        </select>
+                      </div>
+
+                      {/* Area Select/Input */}
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[10px] font-bold text-zinc-400 uppercase text-left">{t.area}</label>
+                        {editCity === "Mumbai" || editCity === "Navi Mumbai" ? (
+                          <select
+                            value={editArea}
+                            onChange={(e) => setEditArea(e.target.value)}
+                            className="w-full px-3 py-1.5 border border-zinc-200 rounded-lg text-xs bg-white text-zinc-700 focus:outline-none"
+                          >
+                            <option value="">{t.areaPlaceholder}</option>
+                            <option value="Belapur">Belapur</option>
+                            <option value="Seawoods">Seawoods</option>
+                            <option value="Nerul">Nerul</option>
+                            <option value="Kharghar">Kharghar</option>
+                            <option value="Vashi">Vashi</option>
+                          </select>
+                        ) : (
+                          <input
+                            type="text"
+                            value={editArea}
+                            onChange={(e) => setEditArea(e.target.value)}
+                            placeholder={t.areaPlaceholder}
+                            className="w-full px-3 py-1.5 border border-zinc-200 rounded-lg text-xs text-zinc-700 focus:outline-none"
+                          />
+                        )}
+                      </div>
+
+                      {/* Apply Button */}
+                      <button
+                        onClick={() => {
+                          updateLocation({ city: editCity, area: editArea });
+                          setLocationDropdownOpen(false);
+                        }}
+                        className="w-full flex items-center justify-center rounded-xl bg-zinc-900 hover:bg-black text-white py-2 text-xs font-bold transition-all cursor-pointer mt-1"
+                      >
+                        <span>Apply</span>
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
           {/* Language Toggle Switcher */}
-          <div className="flex items-center gap-1 rounded-full border border-gray-200/80 p-0.5 bg-gray-50/50">
+          <div className="flex items-center gap-1 rounded-full border border-gray-200/80 p-0.5 bg-gray-100">
             <button
               onClick={() => setSpecificLanguage("en")}
               className={`px-2.5 py-1 text-[10px] sm:text-xs font-semibold rounded-full transition-all duration-300 cursor-pointer ${
@@ -79,7 +200,7 @@ export default function Navbar() {
                 <div className="relative h-full w-full">
                   {workerProfile?.profileImage ? (
                     <img
-                      src={workerProfile.profileImage}
+                      src={getProfileImageUrl(workerProfile.profileImage)}
                       alt="User Avatar"
                       className="h-full w-full object-cover"
                     />

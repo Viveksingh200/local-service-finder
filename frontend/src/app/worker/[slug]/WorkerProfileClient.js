@@ -1,6 +1,6 @@
 "use client";
 
-import { API_BASE_URL } from "@/config";
+import { API_BASE_URL, getProfileImageUrl } from "@/config";
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/authContext";
 import { useLanguage } from "@/context/languageContext";
@@ -226,7 +226,7 @@ export default function WorkerProfileClient({ initialWorker }) {
             <div className="flex gap-4 items-center">
               <div className="relative h-20 w-20 rounded-2xl border border-gray-150 overflow-hidden shrink-0 bg-zinc-50">
                 {worker.profileImage ? (
-                  <img src={worker.profileImage} alt={worker.name} className="h-full w-full object-cover" />
+                  <img src={getProfileImageUrl(worker.profileImage)} alt={worker.name} className="h-full w-full object-cover" />
                 ) : (
                   <div className="h-full w-full flex items-center justify-center bg-amber-100 text-amber-700 font-extrabold text-2xl">
                     {worker.name.charAt(0).toUpperCase()}
@@ -385,32 +385,13 @@ export default function WorkerProfileClient({ initialWorker }) {
               : "Contact this worker directly on their phone details to schedule support."}
           </p>
 
-          {phoneVisible && isAuthenticated ? (
-            <a
-              href={`tel:${worker.phone}`}
-              className="flex items-center justify-center gap-2 rounded-xl bg-emerald-600 text-white py-3.5 px-6 font-extrabold tracking-wide hover:bg-emerald-700 shadow-md shadow-emerald-600/10 transition-all cursor-pointer"
-            >
-              <Phone className="h-5 w-5 shrink-0" />
-              <span>{worker.phone}</span>
-            </a>
-          ) : (
-            <button
-              onClick={handleCallClick}
-              className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white py-3.5 px-6 font-extrabold tracking-wide hover:from-amber-600 hover:to-orange-700 shadow-md shadow-orange-500/10 transition-all cursor-pointer hover:scale-[1.01]"
-            >
-              <Phone className="h-5 w-5 shrink-0" />
-              <span>{language === "hi" ? "कॉल करें / नंबर देखें" : "Call Worker Directly"}</span>
-            </button>
-          )}
-
-          {!isAuthenticated && (
-            <p className="text-[10px] text-zinc-400 mt-3">
-              {language === "hi" ? "नंबर देखने के लिए" : "Requires"}{" "}
-              <Link href="/login" className="text-orange-600 hover:underline font-bold">
-                {language === "hi" ? "लॉगिन करें" : "Login"}
-              </Link>
-            </p>
-          )}
+          <a
+            href={`tel:${worker.phone}`}
+            className="flex items-center justify-center gap-2 rounded-xl bg-emerald-650 bg-emerald-600 text-white py-3.5 px-6 font-extrabold tracking-wide hover:bg-emerald-700 shadow-md shadow-emerald-600/10 transition-all cursor-pointer"
+          >
+            <Phone className="h-5 w-5 shrink-0" />
+            <span>{worker.phone}</span>
+          </a>
         </div>
 
         {/* Leave a Review (Only show rating form to users who aren't the worker themselves) */}
