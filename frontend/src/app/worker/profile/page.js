@@ -8,6 +8,7 @@ import Footer from "@/components/Footer";
 import { useAuth } from "@/context/authContext";
 import { useLanguage } from "@/context/languageContext";
 import { User, Lock, Save, KeyRound, CheckCircle, ArrowLeft, ShieldAlert, Camera, Trash2, Loader2, Navigation, Eye, EyeOff } from "lucide-react";
+import { ProfileSkeleton } from "@/components/Skeletons";
 
 export default function WorkerProfilePage() {
   const { user, workerProfile, loading, updateProfileState, updateUserState, updateLocation } = useAuth();
@@ -59,7 +60,7 @@ export default function WorkerProfilePage() {
     if (workerProfile) {
       setName(workerProfile.name || "");
       setPhone(workerProfile.phone || "");
-      setProfession(workerProfile.profession || "");
+      setProfession(workerProfile.profession === "Pending Setup" ? "" : (workerProfile.profession || ""));
       setExperience(workerProfile.experience || 0);
       setDescription(workerProfile.description || "");
       setServiceAreas(workerProfile.serviceAreas?.join(", ") || "");
@@ -359,6 +360,10 @@ export default function WorkerProfilePage() {
       setUpdatingPassword(false);
     }
   };
+
+  if (loading || !user || !workerProfile) {
+    return <ProfileSkeleton />;
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-zinc-50 text-zinc-900">
@@ -762,9 +767,14 @@ export default function WorkerProfilePage() {
 
               <form onSubmit={handleUpdatePassword} className="flex flex-col gap-4">
                 <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-extrabold text-zinc-400 uppercase tracking-wider">
-                    {language === "hi" ? "वर्तमान पासवर्ड" : "Current Password"}
-                  </label>
+                  <div className="flex justify-between items-center">
+                    <label className="text-[10px] font-extrabold text-zinc-400 uppercase tracking-wider">
+                      {language === "hi" ? "वर्तमान पासवर्ड" : "Current Password"}
+                    </label>
+                    <a href="/forgot-password" className="text-[10px] font-semibold text-amber-600 hover:text-orange-700 transition-colors">
+                      {language === "hi" ? "पासवर्ड भूल गए?" : "Forgot Password?"}
+                    </a>
+                  </div>
                   <div className="relative">
                     <input
                       type={showCurrentPassword ? "text" : "password"}

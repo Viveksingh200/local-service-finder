@@ -8,6 +8,7 @@ import Footer from "@/components/Footer";
 import { useAuth } from "@/context/authContext";
 import { useLanguage } from "@/context/languageContext";
 import { User, Lock, Save, KeyRound, CheckCircle, Eye, EyeOff } from "lucide-react";
+import { ProfileSkeleton } from "@/components/Skeletons";
 
 export default function UserProfile() {
   const { user, loading, logout, updateUserState, updateLocation } = useAuth();
@@ -50,11 +51,7 @@ export default function UserProfile() {
   }, [user]);
 
   if (loading || !user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-zinc-50">
-        <p className="text-zinc-500 font-semibold animate-pulse">Loading Profile...</p>
-      </div>
-    );
+    return <ProfileSkeleton />;
   }
 
   // Handle Profile Update
@@ -260,9 +257,14 @@ export default function UserProfile() {
 
             <form onSubmit={handleUpdatePassword} className="flex flex-col gap-4">
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold text-zinc-500">
-                  {language === "hi" ? "वर्तमान पासवर्ड" : "Current Password"}
-                </label>
+                <div className="flex justify-between items-center">
+                  <label className="text-xs font-bold text-zinc-500">
+                    {language === "hi" ? "वर्तमान पासवर्ड" : "Current Password"}
+                  </label>
+                  <a href="/forgot-password" className="text-[10px] font-semibold text-amber-600 hover:text-orange-700 transition-colors">
+                    {language === "hi" ? "पासवर्ड भूल गए?" : "Forgot Password?"}
+                  </a>
+                </div>
                 <div className="relative">
                   <input
                     type={showCurrentPassword ? "text" : "password"}

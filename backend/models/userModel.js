@@ -32,9 +32,18 @@ import mongoose from "mongoose";
     country: {
         type: String,
         default: ""
+    },
+    resetOtp: {
+        type: String,
+        default: ""
+    },
+    resetOtpExpiry: {
+        type: Date
     }
 },
     {timestamps: true}
 );
+
+userSchema.index({ phone: 1, role: 1 }, { unique: true });
 
 export const User = mongoose.model("User", userSchema);

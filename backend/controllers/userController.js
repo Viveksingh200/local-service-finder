@@ -2,6 +2,7 @@ import { User } from "../models/userModel.js";
 import { Worker } from "../models/workerModel.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { sendSms } from "../utils/sendSms.js";
 
 // Helper function to slugify names
 const slugify = (text) => {
@@ -23,9 +24,23 @@ export const registerUser = async (req, res) => {
             return res.status(400).json({message: "All fields are required!"});
         };
 
-        const existingUser = await User.findOne({phone});
-        if(existingUser){
-            return res.status(400).json({message: "User with this phone number already exists!"});
+        const assignedRole = role || "user";
+
+        // Check if an account with this exact phone AND role exists
+        const existingUserWithRole = await User.findOne({phone, role: assignedRole});
+        if(existingUserWithRole){
+            const roleName = assignedRole === "provider" ? "professional" : "customer";
+            return res.status(400).json({message: `You are already registered as a ${roleName} with this phone number.`});
+        }
+
+        // Check if they have another account with this phone but a different role
+        // If so, their new password MUST be different from the other account's password.
+        const otherRoleAccounts = await User.find({ phone });
+        for (const account of otherRoleAccounts) {
+            const passwordMatches = await bcrypt.compare(password, account.password);
+            if (passwordMatches) {
+                return res.status(400).json({message: "You must use a different password for your customer and professional accounts."});
+            }
         }
 
         const salt = await bcrypt.genSalt(10);
@@ -35,7 +50,7 @@ export const registerUser = async (req, res) => {
             name: name,
             phone: phone,
             password: hashedPassword,
-            role: role || "user",
+            role: assignedRole,
             city: req.body.city || "",
             area: req.body.area || "",
             country: country || ""
@@ -43,15 +58,16 @@ export const registerUser = async (req, res) => {
 
         // If the registering user is a worker/provider, initialize their profile
         if (role === "provider") {
+            const professionSlug = req.body.profession ? `${slugify(req.body.profession)}-` : "";
             const baseSlug = slugify(name);
             const suffix = phone.toString().slice(-4);
-            const slug = `${baseSlug}-${suffix}`;
+            const slug = `${professionSlug}${baseSlug}-${suffix}`;
 
             await Worker.create({
                 userId: newUser._id,
                 name: newUser.name,
                 phone: newUser.phone.toString(),
-                profession: req.body.profession || "Pending Setup",
+                profession: req.body.profession || "",
                 description: req.body.description || "",
                 experience: req.body.experience || 0,
                 serviceCategories: req.body.serviceCategories || [],
@@ -85,17 +101,26 @@ export const loginUser = async (req, res) => {
             return res.status(400).json({message: "All fields are required!"});
         }
 
-        const user = await User.findOne({phone});
+        const users = await User.find({phone});
 
-        if(!user){
+        if(!users || users.length === 0){
             return res.status(404).json({message: "User not found!"})
         }
 
-        const matchedPassword = await bcrypt.compare(password, user.password);
+        let loggedInUser = null;
+        for (const u of users) {
+            const matchedPassword = await bcrypt.compare(password, u.password);
+            if (matchedPassword) {
+                loggedInUser = u;
+                break;
+            }
+        }
 
-        if(!matchedPassword){
+        if(!loggedInUser){
             return res.status(403).json({message: "Invalid credentials!"});
         }
+
+        const user = loggedInUser;
 
         const payload = {
             id: user._id,
@@ -287,5 +312,90 @@ export const refreshAccessToken = async (req, res) => {
     } catch (error) {
         console.error("Refresh token verification failed:", error);
         return res.status(401).json({ success: false, message: "Invalid or expired refresh token!" });
+    }
+};
+
+export const forgotPassword = async (req, res) => {
+    try {
+        const { phone } = req.body;
+        if (!phone) {
+            return res.status(400).json({ message: "Phone number is required!" });
+        }
+
+        const users = await User.find({ phone });
+        if (!users || users.length === 0) {
+            return res.status(404).json({ message: "No account found with this phone number!" });
+        }
+
+        // Generate random 6-digit OTP
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const salt = await bcrypt.genSalt(10);
+        const hashedOtp = await bcrypt.hash(otp, salt);
+
+        // Update all users with this phone number with the OTP
+        for (const user of users) {
+            user.resetOtp = hashedOtp;
+            user.resetOtpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 mins expiry
+            await user.save();
+        }
+
+        // Send OTP via Twilio SMS (or fallback to mock console log if keys are unconfigured)
+        await sendSms(phone, `Your OTP for Local Service Finder password reset is ${otp}. Valid for 10 minutes.`);
+
+        return res.status(200).json({
+            success: true,
+            message: "OTP sent successfully!"
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: error.message || "Internal server error" });
+    }
+};
+
+export const resetPassword = async (req, res) => {
+    try {
+        const { phone, otp, newPassword } = req.body;
+        if (!phone || !otp || !newPassword) {
+            return res.status(400).json({ message: "Phone number, OTP, and new password are required!" });
+        }
+
+        const users = await User.find({ phone });
+        if (!users || users.length === 0) {
+            return res.status(404).json({ message: "No account found with this phone number!" });
+        }
+
+        // We can just verify the OTP against the first user found since all have the same OTP in our design
+        const primaryUser = users[0];
+
+        if (!primaryUser.resetOtp || !primaryUser.resetOtpExpiry) {
+            return res.status(400).json({ message: "No OTP request found for this phone number." });
+        }
+
+        if (primaryUser.resetOtpExpiry < new Date()) {
+            return res.status(400).json({ message: "OTP has expired. Please request a new one." });
+        }
+
+        const isMatch = await bcrypt.compare(otp, primaryUser.resetOtp);
+        if (!isMatch) {
+            return res.status(400).json({ message: "Invalid OTP!" });
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+        for (const user of users) {
+            user.password = hashedPassword;
+            user.resetOtp = undefined;
+            user.resetOtpExpiry = undefined;
+            await user.save();
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Password reset successfully! You can now log in."
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: error.message || "Internal server error" });
     }
 };
